@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AppRegistry, StyleSheet,Image, Text, View, TextInput, Button, Alert,FlatList,SectionList, ActivityIndicator, ListView} from 'react-native';
+import { BackHandler, AppRegistry, StyleSheet,Image, Text, View, TextInput, Button, Alert,FlatList,SectionList, ActivityIndicator, ListView} from 'react-native';
 
 
 class Getting extends Component {
@@ -30,6 +30,17 @@ class Blink extends Component {
   }
 }
 
+
+async function getSearchResultFromApi() {
+    try {
+      let response = await fetch('https://api.tomtom.com/search/2/search/zaporowa.json?key=Qz1MbJMrt62cRMZDn5YdwKTSC33rXbV5&typeahead=true&limit=30&lat=51.7772292&lon=19.3861459&radius=2000&language=pl-PL&minFuzzyLevel=2&maxFuzzyLevel=4');
+      let responseJson = await response.json();
+      return responseJson.results;
+    } catch(error) {
+      console.error(error);
+    }
+  }
+
 async function getMoviesFromApi() {
     try {
       let response = await fetch('https://facebook.github.io/react-native/movies.json');
@@ -40,6 +51,73 @@ async function getMoviesFromApi() {
     }
   }
 
+
+  BackHandler.addEventListener('hardwareBackPress', function() {
+     this.goBack();
+     return true;
+  });
+export default class Search extends Component {
+
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      isLoading: false,
+      isSearching: true,
+      searchingText: '',
+    }
+  }
+  goBack(){
+    setState({isLoading:false, isSearching:true, searchingText: ''});
+  }
+  searchM(text) {
+    this.setState({isSearching:false, isLoading: true})
+    return fetch('https://api.tomtom.com/search/2/search/'+text+'.json?key=Qz1MbJMrt62cRMZDn5YdwKTSC33rXbV5&typeahead=true&limit=30&lat=51.7772292&lon=19.3861459&radius=10000&language=pl-PL&minFuzzyLevel=2&maxFuzzyLevel=4')
+      .then((response) => response.json())
+      .then((responseJson) => {
+        let ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+        this.setState({
+          isLoading: false,
+          isSearching: false,
+          dataSource: ds.cloneWithRows(responseJson.results),
+        }, function() {
+          // do somethi ng with new state
+        });
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }
+
+  render() {
+    if (this.state.isSearching){
+        return (<View style={{flex: 1, paddingTop: 20}}>
+        <TextInput style={{height: 40}} placeholder="Type here to search!"
+            onChangeText={(text) => this.setState({searchingText:text})}
+            onEndEditing={() => this.searchM(this.state.searchingText)}
+             />
+      </View>);
+    } else if (this.state.isLoading) {
+      return (
+        <View style={{flex: 1, paddingTop: 20}}>
+          <ActivityIndicator />
+        </View>
+      );
+    }
+
+    return (
+      <View style={{flex: 1, paddingTop: 20}}>
+        <ListView
+          enableEmptySections={true}
+          dataSource={this.state.dataSource}
+          renderRow={(rowData) => <Text>{rowData.address.freeformAddress}, {rowData.type}</Text>}
+        />
+      </View>
+    );
+  }
+}
+
+/**Display list
 export default class Movies extends Component {
   constructor(props) {
     super(props);
@@ -84,7 +162,7 @@ export default class Movies extends Component {
     );
   }
 }
-
+*/
 /*
 export default class App extends Component {
   render() {
